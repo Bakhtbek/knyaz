@@ -1,0 +1,97 @@
+import time
+import pyautogui
+import tkinter
+
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from tkinter import messagebox as mb
+from selenium.webdriver.common.by import By
+from openpyxl import Workbook, load_workbook
+
+# Автоматическая установка ChromeDriver
+service = Service(ChromeDriverManager().install())
+
+# Создаем драйвер
+driver = webdriver.Chrome(service=service)
+
+# Открываем страницу
+print("Открываем портал...")
+driver.get("https://ala.dmed.kz/")
+
+# Вход на портал. Вводим логин и пароль
+driver.find_element(By.XPATH, "//*[@id='tbUserName']").send_keys('820328399053')
+time.sleep(0.500)
+driver.find_element(By.XPATH, "//*[@id='tbPassword']").send_keys('Alima@2026')
+time.sleep(0.500)
+driver.find_element(By.XPATH, "//*[@id='btn-sign-in']").click()
+time.sleep(5)
+
+# Ждем окно с кнопкой "ОК"
+#mb.showerror(title='DamuMed', message='Комплексная медицинская информационная система')
+driver.get("https://reg-ala.dmed.kz/Home/Desktop")
+time.sleep(2)
+
+try:
+
+# -----------------------------------------
+    wb = load_workbook('spisok_iin.xlsx')
+    ws = wb.active
+    ws.title = 'spisok'
+
+    k = 980
+
+    while k < 1935:
+        
+        iin = ws['C' + str(k)].value
+        print(k," * ",iin)
+
+        # -----------------------------------------
+        driver.find_element(By.XPATH, "//*[@id='cbSearch-inputEl']").clear()
+        time.sleep(0.700)
+        driver.find_element(By.XPATH, "//*[@id='cbSearch-inputEl']").send_keys(iin)
+        time.sleep(0.700)
+
+        pyautogui.press("enter")  # Нажата клавиша enter
+        time.sleep(3)
+            
+        driver.find_element(By.XPATH, "//div[text()='"+str(iin)+"']").click()
+        time.sleep(2)
+
+        driver.find_element(By.XPATH, "//*[@id='btnInfo']").click() # Детальная информация о ФЛ
+        time.sleep(2)
+
+        p_fio=driver.find_element(By.XPATH, "//*[@id='lastName-bodyEl']").text  # Фамилия
+        print(f"Весь текст: {p_fio}")
+        p_name=driver.find_element(By.XPATH, "//*[@id='firstName-bodyEl']").text  # Имя
+        print(f"Весь текст: {p_name}")
+        p_surname=driver.find_element(By.XPATH, "//*[@id='secondName-bodyEl']").text  # Отчество
+        print(f"Весь текст: {p_surname}")
+        p_adres=driver.find_element(By.XPATH, "//*[@id='AddressName-bodyEl']").text  # Место жительства
+        print(f"Весь текст: {p_adres}")
+        p_telnumber=driver.find_element(By.XPATH, "//*[@id='PhoneNumber-bodyEl']").text  # Телефон
+        print(f"Весь текст: {p_telnumber}")
+        p_prik=driver.find_element(By.XPATH, "//*[@id='TerritoryService-bodyEl']").text  # Прикрепление
+        print(f"Весь текст: {p_prik}")
+
+        ws['F' + str(k)] = (p_fio+' '+p_name+' '+p_surname)
+        ws['G' + str(k)] = (p_adres)
+        ws['H' + str(k)] = (p_telnumber)
+        ws['I' + str(k)] = (p_prik)
+                       
+        wb.save('spisok_iin.xlsx')
+        k = int(k) + 1
+        time.sleep(0.500)
+
+        pyautogui.press("esc")  # Нажата клавиша ESCAPE
+        time.sleep(1)
+        
+        print("Страница успешно загружена!")
+        print(" ")
+        
+except Exception as e:
+    print(f"Ошибка: {e}")
+    
+finally:
+    driver.quit()
+    print("end")
